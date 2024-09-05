@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from typing import Dict, List, Optional, Set
 
@@ -226,4 +227,13 @@ class DirectionalTradingControllerBase(ControllerBase):
         df = self.processed_data.get("features", pd.DataFrame())
         if df.empty:
             return []
-        return [format_df_for_printout(df.tail(5), table_format="psql",)]
+
+        df = df.tail(5)
+        if 'timestamp' in df.columns:
+            local_tz = datetime.now().astimezone().tzinfo
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s', utc=True)
+            df['timestamp'] = df['timestamp'].dt.tz_convert(local_tz)
+            # remove time zone for concise display
+            df['timestamp'] = df['timestamp'].dt.tz_localize(None)
+
+        return [format_df_for_printout(df, table_format="psql",)]
